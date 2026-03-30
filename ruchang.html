@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <title>入厂登记·安全培训·考试</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 0;
+        }
+        .page {
+            max-width: 600px;
+            margin: 0 auto 30px;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #222;
+            margin-top: 0;
+        }
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 6px;
+            background: #007bff;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:active {
+            background: #0062cc;
+        }
+        .btn-green {
+            background: #28a745;
+        }
+        .btn-red {
+            background: #dc3545;
+        }
+        video {
+            width: 100%;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        #nextBtn {
+            background: #28a745;
+        }
+        .question {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+        .question p {
+            margin: 0 0 8px;
+            font-size: 15px;
+        }
+        .ans-btn {
+            width: 48%;
+            padding: 8px;
+            margin: 0 1%;
+            background: #6c757d;
+        }
+        .ans-btn.selected {
+            background: #007bff;
+            font-weight: bold;
+        }
+        .result-box {
+            text-align: center;
+            font-size: 18px;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .pass {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .fail {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .time-red {
+            color: red;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 1. 入厂登记 -->
+<div id="page1" class="page">
+    <h2>入厂登记</h2>
+    <input type="text" id="name" placeholder="请输入姓名" />
+    <input type="text" id="idcard" placeholder="请输入身份证号" />
+    <input type="text" id="phone" placeholder="请输入手机号" />
+    <input type="text" id="company" placeholder="来访单位" />
+    <input type="text" id="toUser" placeholder="被访人" />
+    <input type="text" id="reason" placeholder="来访事由" />
+    <button onclick="goTrain()">提交登记 → 进入培训</button>
+</div>
+
+<!-- 2. 视频培训 -->
+<div id="page2" class="page" style="display: none">
+    <h2>入厂安全培训</h2>
+    <video controls>
+        <source src="training.mp4" type="video/mp4" />
+        您的浏览器不支持视频播放
+    </video>
+    <button id="nextBtn" onclick="goExam()">进入考试</button>
+</div>
+
+<!-- 3. 考试 -->
+<div id="page3" class="page" style="display: none">
+    <h2>入厂安全考试</h2>
+    <div id="questionsBox"></div>
+    <button onclick="submitExam()">提交试卷</button>
+</div>
+
+<!-- 4. 结果 -->
+<div id="page4" class="page" style="display: none">
+    <h2>考试结果</h2>
+    <div id="result" class="result-box"></div>
+    <div id="userInfo" style="text-align: center; display: none">
+        <p id="showName"></p>
+        <p id="showIdcard"></p>
+        <div id="showTime" class="time-red"></div>
+    </div>
+    <button id="retryBtn" style="display: none" onclick="goExam()">重新考试</button>
+    <button onclick="resetAll()">重新登记</button>
+</div>
+
+<script>
+const questions = [
+    { id: 1, title: "入厂前必须正确佩戴安全帽", ans: "对" },
+    { id: 2, title: "厂区内可以随意吸烟", ans: "对" },
+    { id: 3, title: "操作特种设备必须持证上岗", ans: "对" },
+    { id: 4, title: "发现安全隐患应及时上报", ans: "对" },
+    { id: 5, title: "可以跨越安全防护栏", ans: "对" },
+    { id: 6, title: "消防通道可以临时堆放物品", ans: "对" },
+    { id: 7, title: "特种作业需提前审批", ans: "对" },
+    { id: 8, title: "设备带故障可以继续运行", ans: "对" },
+    { id: 9, title: "上岗前必须参加安全培训", ans: "对" },
+    { id: 10, title: "应急联系电话无需牢记", ans: "对" }
+];
+
+let userAnswers = [];
+
+function showPage(id) {
+    document.querySelectorAll(".page").forEach(p => p.style.display = "none");
+    document.getElementById(id).style.display = "block";
+}
+
+function goTrain() {
+    const name = document.getElementById("name").value.trim();
+    if (!name) {
+        alert("请填写姓名");
+        return;
+    }
+    showPage("page2");
+}
+
+function goExam() {
+    userAnswers = [];
+    renderQuestions();
+    showPage("page3");
+}
+
+function renderQuestions() {
+    let html = "";
+    questions.forEach((q, idx) => {
+        html += `
+        <div class="question" data-qid="${q.id}">
+            <p>${idx + 1}. ${q.title}</p>
+            <button class="ans-btn" onclick="selectAns(${q.id},'对')">对</button>
+            <button class="ans-btn" onclick="selectAns(${q.id},'错')">错</button>
+        </div>`;
+    });
+    document.getElementById("questionsBox").innerHTML = html;
+}
+
+function selectAns(qid, val) {
+    // 保存答案
+    const exist = userAnswers.find(a => a.id === qid);
+    if (exist) {
+        exist.val = val;
+    } else {
+        userAnswers.push({ id: qid, val: val });
+    }
+
+    // 按钮高亮
+    const qBox = document.querySelector(`.question[data-qid="${qid}"]`);
+    const btns = qBox.querySelectorAll(".ans-btn");
+    btns.forEach(b => b.classList.remove("selected"));
+
+    const targetBtn = Array.from(btns).find(b => b.innerText === val);
+    if (targetBtn) targetBtn.classList.add("selected");
+}
+
+function submitExam() {
+    if (userAnswers.length < 10) {
+        alert("请完成所有题目再提交！");
+        return;
+    }
+
+    let score = 0;
+    userAnswers.forEach(a => {
+        const q = questions.find(x => x.id === a.id);
+        if (q && q.ans === a.val) score += 10;
+    });
+
+    const resultBox = document.getElementById("result");
+    const userInfo = document.getElementById("userInfo");
+    const retryBtn = document.getElementById("retryBtn");
+
+    if (score >= 80) {
+        resultBox.className = "result-box pass";
+        resultBox.innerHTML = `考试合格！得分：${score}分`;
+        userInfo.style.display = "block";
+        retryBtn.style.display = "none";
+
+        document.getElementById("showName").innerText =
+            "姓名：" + document.getElementById("name").value;
+        document.getElementById("showIdcard").innerText =
+            "身份证号：" + document.getElementById("idcard").value;
+        startTime();
+    } else {
+        resultBox.className = "result-box fail";
+        resultBox.innerHTML = `考试不合格！得分：${score}分，请重考`;
+        userInfo.style.display = "none";
+        retryBtn.style.display = "block";
+    }
+
+    showPage("page4");
+}
+
+function startTime() {
+    function update() {
+        const now = new Date();
+        document.getElementById("showTime").innerText = now.toLocaleString();
+    }
+    update();
+    setInterval(update, 1000);
+}
+
+function resetAll() {
+    location.reload();
+}
+</script>
+</body>
+</html>
